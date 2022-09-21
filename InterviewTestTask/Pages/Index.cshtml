@@ -1,0 +1,102 @@
+﻿@page
+@model IndexModel
+
+<section class="vh-100">
+	<div class="container h-100">
+		<div class="row d-flex justify-content-center align-items-center h-100">
+			<div class="col-12 col-md-8 col-lg-6 col-xl-5">
+				<div class="card bg-dark text-white my-2" style="border-radius: 2rem;">
+					<div class="card-body p-5 text-center">
+						<div class="my-5">
+							<h2 class="fw-bold text-uppercase">Counter</h2>
+							<p class="text-white-50 mb-4">Please enter requests delay</p>
+							<form>
+								<div class="input-group mb-3">
+									<input type="number" class="form-control form-control-lg" placeholder="Delay" aria-label="Delay" asp-for="Delay" id="delay-input">
+									<span class="input-group-text bg-dark text-light">ms</span>
+								</div>
+								<div class="my-2">
+									<span asp-validation-for="Delay" class="mb-2"></span>
+								</div>
+								<div class="d-grid gap-2">
+									<button class="btn btn-outline-light btn-lg start-button my-2" id="start-button">Start</button>
+									<button class="btn btn-outline-light btn-lg stop-button my-2" id="stop-button" disabled>Stop</button>
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+				
+				<div class="card bg-dark text-white" style="border-radius: 2rem;">
+					<div class="card-body p-5 text-center">
+						<p class="fs-3 m-0" >18,446,744,073,709,551,615</p>
+					</div>
+				</div>
+				
+				<div id="inputForm">
+					<input type="text" id="message" />
+					<input type="button" id="sendBtn" value="Отправить" />
+				</div>
+				<div id="chatroom"></div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<partial name="Shared/_ValidationScriptsPartial"/>
+<partial name="Shared/_SignalrScriptsPartial"/>
+
+<script>
+	document.addEventListener("DOMContentLoaded", () => {
+	    window.modalElements = {
+			startButton: document.getElementById("start-button"),
+	        stopButton: document.getElementById("stop-button"),
+	        delayInput: document.getElementById("delay-input"),
+			delayInputJQ: $("#delay-input"),
+	    }
+		
+		modalElements.startButton.addEventListener("click", startRequestSending);
+		modalElements.stopButton.addEventListener("click", stopRequestSending);
+
+		 const hubConnection = new signalR.HubConnectionBuilder()
+	        .withUrl("/counter")
+	        .build();
+			
+		hubConnection.on("Send", function (data) {
+
+	        let elem = document.createElement("p");
+	        elem.appendChild(document.createTextNode(data));
+	        let firstElem = document.getElementById("chatroom").firstChild;
+	        document.getElementById("chatroom").insertBefore(elem, firstElem);
+
+	    });
+
+	    document.getElementById("sendBtn").addEventListener("click", function (e) {
+			
+	        let message = document.getElementById("message").value;
+	        hubConnection.invoke("Send", message);
+	    });
+
+	    hubConnection.start();
+	});
+	
+	function startRequestSending(event) {
+		if (!modalElements.delayInputJQ.valid()){
+            return;
+		}
+		
+        changeElementsState();
+	}
+	
+	function stopRequestSending(event) {
+        changeElementsState();
+	}    
+	
+	
+	function changeElementsState(){
+		modalElements.startButton.disabled = !modalElements.startButton.disabled;
+		modalElements.delayInput.disabled = !modalElements.delayInput.disabled;
+		modalElements.stopButton.disabled = !modalElements.stopButton.disabled;
+
+	}
+</script>

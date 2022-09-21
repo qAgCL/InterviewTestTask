@@ -1,0 +1,15 @@
+﻿.start-button {
+    background-color: #4B67FF;
+}
+
+.start-button:hover {
+    background-color: #ADB9FF;
+}
+
+.stop-button {
+    background-color: #DD790D;
+}
+
+.stop-button:hover {
+    background-color: #FFD8AD;
+}
