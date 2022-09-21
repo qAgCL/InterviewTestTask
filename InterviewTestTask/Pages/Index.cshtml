@@ -26,18 +26,11 @@
 						</div>
 					</div>
 				</div>
-				
 				<div class="card bg-dark text-white" style="border-radius: 2rem;">
 					<div class="card-body p-5 text-center">
-						<p class="fs-3 m-0" >18,446,744,073,709,551,615</p>
+						<p class="fs-3 m-0" id="amount"></p>
 					</div>
 				</div>
-				
-				<div id="inputForm">
-					<input type="text" id="message" />
-					<input type="button" id="sendBtn" value="Отправить" />
-				</div>
-				<div id="chatroom"></div>
 			</div>
 		</div>
 	</div>
@@ -53,31 +46,23 @@
 	        stopButton: document.getElementById("stop-button"),
 	        delayInput: document.getElementById("delay-input"),
 			delayInputJQ: $("#delay-input"),
+			amoutLabel: document.getElementById("amount"),
 	    }
 		
 		modalElements.startButton.addEventListener("click", startRequestSending);
 		modalElements.stopButton.addEventListener("click", stopRequestSending);
 
-		 const hubConnection = new signalR.HubConnectionBuilder()
+		window.hubConnection = new signalR.HubConnectionBuilder()
 	        .withUrl("/counter")
 	        .build();
 			
-		hubConnection.on("Send", function (data) {
-
-	        let elem = document.createElement("p");
-	        elem.appendChild(document.createTextNode(data));
-	        let firstElem = document.getElementById("chatroom").firstChild;
-	        document.getElementById("chatroom").insertBefore(elem, firstElem);
-
+		window.hubConnection.on("SendRandomValue", function (data) {
+            modalElements.amoutLabel.innerHTML = parseInt(data, 10).toLocaleString();
 	    });
 
-	    document.getElementById("sendBtn").addEventListener("click", function (e) {
-			
-	        let message = document.getElementById("message").value;
-	        hubConnection.invoke("Send", message);
-	    });
-
-	    hubConnection.start();
+	    window.hubConnection.start();
+		
+        window.interval;
 	});
 	
 	function startRequestSending(event) {
@@ -86,17 +71,30 @@
 		}
 		
         changeElementsState();
+		clearInterval(window.interval);
+		let interval = parseInt(modalElements.delayInput.value, 10)
+		window.interval = setInterval(sendRequest, interval);
 	}
 	
 	function stopRequestSending(event) {
         changeElementsState();
+		clearInterval(window.interval);
 	}    
 	
-	
-	function changeElementsState(){
+	function changeElementsState() {
 		modalElements.startButton.disabled = !modalElements.startButton.disabled;
 		modalElements.delayInput.disabled = !modalElements.delayInput.disabled;
 		modalElements.stopButton.disabled = !modalElements.stopButton.disabled;
+	}
+	
+	function sendRequest() {
+	    let value = getRandomInt('@Model.RandomRange.MinValue', '@Model.RandomRange.MaxValue')
+		window.hubConnection.invoke("SendRandomValue", value);
+	}
 
+	function getRandomInt(min, max) {
+	  min = Math.ceil(min);
+	  max = Math.floor(max);
+	  return Math.floor(Math.random() * (max - min) + min);
 	}
 </script>
