@@ -1,40 +1,32 @@
 ﻿@page
 @model IndexModel
 
-<section class="vh-100">
-	<div class="container h-100">
-		<div class="row d-flex justify-content-center align-items-center h-100">
-			<div class="col-12 col-md-8 col-lg-6 col-xl-5">
-				<div class="card bg-dark text-white my-2" style="border-radius: 2rem;">
-					<div class="card-body p-5 text-center">
-						<div class="my-5">
-							<h2 class="fw-bold text-uppercase">Counter</h2>
-							<p class="text-white-50 mb-4">Please enter requests delay</p>
-							<form>
-								<div class="input-group mb-3">
-									<input type="number" class="form-control form-control-lg" placeholder="Delay" aria-label="Delay" asp-for="Delay" id="delay-input">
-									<span class="input-group-text bg-dark text-light">ms</span>
-								</div>
-								<div class="my-2">
-									<span asp-validation-for="Delay" class="mb-2"></span>
-								</div>
-								<div class="d-grid gap-2">
-									<button class="btn btn-outline-light btn-lg start-button my-2" id="start-button">Start</button>
-									<button class="btn btn-outline-light btn-lg stop-button my-2" id="stop-button" disabled>Stop</button>
-								</div>
-							</form>
-						</div>
-					</div>
+<div class="card bg-dark text-white my-2" style="border-radius: 2rem;">
+	<div class="card-body p-5 text-center">
+		<div class="my-5">
+			<h2 class="fw-bold text-uppercase">Counter</h2>
+			<p class="text-white-50 mb-4">Please enter requests delay</p>
+			<form>
+				<div class="input-group mb-3">
+					<input type="number" class="form-control form-control-lg" placeholder="Delay" aria-label="Delay" asp-for="Delay" id="delay-input">
+					<span class="input-group-text bg-dark text-light">ms</span>
 				</div>
-				<div class="card bg-dark text-white" style="border-radius: 2rem;">
-					<div class="card-body p-5 text-center">
-						<p class="fs-3 m-0" id="amount"></p>
-					</div>
+				<div class="my-2">
+					<span asp-validation-for="Delay" class="mb-2"></span>
 				</div>
-			</div>
+				<div class="d-grid gap-2">
+					<button class="btn btn-outline-light btn-lg start-button my-2" id="start-button">Start</button>
+					<button class="btn btn-outline-light btn-lg stop-button my-2" id="stop-button" disabled>Stop</button>
+				</div>
+			</form>
 		</div>
 	</div>
-</section>
+</div>
+<div class="card bg-dark text-white" style="border-radius: 2rem;">
+	<div class="card-body p-5 text-center">
+		<p class="fs-3 m-0" id="amount"></p>
+	</div>
+</div>
 
 <partial name="Shared/_ValidationScriptsPartial"/>
 <partial name="Shared/_SignalrScriptsPartial"/>
@@ -52,15 +44,15 @@
 		modalElements.startButton.addEventListener("click", startRequestSending);
 		modalElements.stopButton.addEventListener("click", stopRequestSending);
 
-		window.hubConnection = new signalR.HubConnectionBuilder()
+		const hubConnection = new signalR.HubConnectionBuilder()
 	        .withUrl("/counter")
 	        .build();
 			
-		window.hubConnection.on("SendRandomValue", function (data) {
+		hubConnection.on("GetCurrentCounterAmount", function (data) {
             modalElements.amoutLabel.innerHTML = parseInt(data, 10).toLocaleString();
 	    });
-
-	    window.hubConnection.start();
+		
+		hubConnection.start().catch(err => window.location.href = "error");
 		
         window.interval;
 	});
@@ -72,7 +64,7 @@
 		
         changeElementsState();
 		clearInterval(window.interval);
-		let interval = parseInt(modalElements.delayInput.value, 10)
+        let interval = parseInt(modalElements.delayInput.value, 10);
 		window.interval = setInterval(sendRequest, interval);
 	}
 	
@@ -88,8 +80,15 @@
 	}
 	
 	function sendRequest() {
-	    let value = getRandomInt('@Model.RandomRange.MinValue', '@Model.RandomRange.MaxValue')
-		window.hubConnection.invoke("SendRandomValue", value);
+        let value = getRandomInt('@Model.RandomRange.MinValue', '@Model.RandomRange.MaxValue');
+		
+	    fetch("/api/Counter/AddGeneratedValue", {
+	        method: "PUT",
+	        body: JSON.stringify({value}),
+	        headers: {
+	            "Content-Type": "application/json"
+	        }
+	    }).catch(err => window.location.href = "error");
 	}
 
 	function getRandomInt(min, max) {
